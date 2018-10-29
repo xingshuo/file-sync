@@ -1,0 +1,18 @@
+{
+	"localDir": "/home/lakefu/tmp/test_file_sync",
+	"remoteDir": "/home/xingshuo/test_file_sync",
+
+	"sshHost": "your remote address",
+	"sshPort": 22,
+	"sshUserName": "your username",
+	"sshPassword": "your password",
+
+	"ignoreFiles": [
+		".git",
+		".idea",
+		".swp",
+		".swx",
+		".sln",
+		".svn"
+	]
+}
