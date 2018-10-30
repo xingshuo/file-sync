@@ -11,7 +11,7 @@ import (
 )
 
 type SyncConfig struct { //json.Unmarshal struct must public var
-	LocalDir  string
+	LocalDir  string //absolute path needed
 	RemoteDir string
 
 	SshHost     string
@@ -20,6 +20,7 @@ type SyncConfig struct { //json.Unmarshal struct must public var
 	SshPassword string
 
 	IgnoreFiles []string
+	IgnoreDirs  []string //relative path to LocalDir
 }
 
 const (
@@ -49,11 +50,11 @@ func loadConfig() bool {
 		return false
 	}
 
-	g_SyncCfg.LocalDir, err = filepath.Abs(g_SyncCfg.LocalDir) //change to abs path
-	if err != nil {
-		log.Printf("Change LocalDir Abs Error:%v\n", err)
+	if !filepath.IsAbs(g_SyncCfg.LocalDir) {
+		log.Print("LocalDir must be Abs Path\n")
 		return false
 	}
+	log.Printf("---load cfg: %v----\n", g_SyncCfg)
 
 	return true
 }

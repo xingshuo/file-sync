@@ -54,16 +54,12 @@ func (w *FileWatcher) Run() {
 					if file.IsDir() {
 						w.handler.Add(event.Name)
 					}
-					if !g_FileSyncer.IsIgnoreFile(event.Name) {
-						g_FileSyncer.syncEvent <- event.Name
-					}
+					g_FileSyncer.syncEvent <- event.Name
 				}
 
 				if (event.Op & fsnotify.Write) == fsnotify.Write {
 					log.Printf("----write event (name:%s) (op:%v)\n", event.Name, event.Op)
-					if !g_FileSyncer.IsIgnoreFile(event.Name) {
-						g_FileSyncer.syncEvent <- event.Name
-					}
+					g_FileSyncer.syncEvent <- event.Name
 				}
 
 				if (event.Op & fsnotify.Remove) == fsnotify.Remove {
@@ -72,9 +68,7 @@ func (w *FileWatcher) Run() {
 					if err == nil && file.IsDir() {
 						w.handler.Remove(event.Name)
 					}
-					if !g_FileSyncer.IsIgnoreFile(event.Name) {
-						g_FileSyncer.removeEvent <- event.Name
-					}
+					g_FileSyncer.removeEvent <- event.Name
 				}
 			}
 		case err := <-w.handler.Errors:

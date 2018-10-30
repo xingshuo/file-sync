@@ -100,11 +100,15 @@ func (s *FileSyncer) Run() {
 
 func (s *FileSyncer) JoinRemotePath(localPath string) string { //remote abs dir or file path
 	localPath = strings.Replace(localPath, g_SyncCfg.LocalDir, "", -1)
-	syncPath := filepath.ToSlash(localPath)
+	syncPath := filepath.ToSlash(localPath) //change platform dependent path delimiter to '/', example on windows '\' -> '/'
 	return path.Join(g_SyncCfg.RemoteDir, syncPath)
 }
 
 func (s *FileSyncer) SyncFile(localFilePath string) error {
+	if s.IsIgnoreFile(localFilePath) {
+		fmt.Printf("ignore sync file: %s\n", localFilePath)
+		return nil
+	}
 	srcFile, err := os.Open(localFilePath)
 	if err != nil {
 		fmt.Printf("sync file %s failed: %v\n", localFilePath, err)
@@ -129,6 +133,10 @@ func (s *FileSyncer) SyncFile(localFilePath string) error {
 }
 
 func (s *FileSyncer) SyncDir(localDirPath string) error {
+	if s.IsIgnoreDir(localDirPath) {
+		fmt.Printf("ignore sync dir: %s\n", localDirPath)
+		return nil
+	}
 	localFiles, err := ioutil.ReadDir(localDirPath)
 	if err != nil {
 		fmt.Printf("sync dir %s failed: %v\n", localDirPath, err)
@@ -137,7 +145,7 @@ func (s *FileSyncer) SyncDir(localDirPath string) error {
 	remoteJoinDir := s.JoinRemotePath(localDirPath)
 	s.sftpClient.Mkdir(remoteJoinDir)
 	for _, file := range localFiles {
-		subSyncPath := path.Join(localDirPath, file.Name())
+		subSyncPath := filepath.Join(localDirPath, file.Name())
 		if file.IsDir() {
 			s.SyncDir(subSyncPath)
 		} else {
@@ -177,9 +185,26 @@ func (s *FileSyncer) RemoveDir(remoteRemoveDir string) error {
 	return nil
 }
 
-func (s *FileSyncer) IsIgnoreFile(filename string) bool {
+func (s *FileSyncer) IsIgnoreFile(fpath string) bool {
+	dirname, filename := filepath.Split(fpath)
 	for _, suffix := range g_SyncCfg.IgnoreFiles {
 		if strings.HasSuffix(filename, suffix) {
+			return true
+		}
+	}
+	for _, prefix := range g_SyncCfg.IgnoreDirs {
+		absPrefix := filepath.Join(g_SyncCfg.LocalDir, prefix)
+		if strings.HasPrefix(dirname, absPrefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *FileSyncer) IsIgnoreDir(dirname string) bool {
+	for _, prefix := range g_SyncCfg.IgnoreDirs {
+		absPrefix := filepath.Join(g_SyncCfg.LocalDir, prefix)
+		if strings.HasPrefix(dirname, absPrefix) {
 			return true
 		}
 	}
