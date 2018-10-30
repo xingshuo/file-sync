@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -29,7 +29,7 @@ func handleConsole() {
 					log.Print("sync lost dir/file path args\n")
 					break
 				}
-				syncPath := path.Join(g_SyncCfg.LocalDir, cmds[1])
+				syncPath := filepath.Join(g_SyncCfg.LocalDir, cmds[1])
 				log.Printf("usr cmd sync:%s\n", syncPath)
 				g_FileSyncer.syncEvent <- syncPath
 			}
@@ -39,7 +39,7 @@ func handleConsole() {
 					log.Print("remove lost dir/file path args\n")
 					break
 				}
-				removePath := path.Join(g_SyncCfg.LocalDir, cmds[1])
+				removePath := filepath.Join(g_SyncCfg.LocalDir, cmds[1])
 				log.Printf("usr cmd remove:%s\n", removePath)
 				g_FileSyncer.removeEvent <- removePath
 			}
@@ -47,6 +47,7 @@ func handleConsole() {
 			{
 				log.Print("sync local dir/file to remote: 	sync dirpath/filepath\n")
 				log.Print("remove remote dir/file: 	 remote dirpath/filepath\n")
+				log.Print("quit app:	exit or quit\n")
 			}
 		case cmds[0] == "exit" || cmds[0] == "quit":
 			{
