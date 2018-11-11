@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"io/ioutil"
 	"log"
 	"os"
@@ -23,20 +24,20 @@ type SyncConfig struct { //json.Unmarshal struct must public var
 	IgnoreDirs  []string //relative path to LocalDir
 }
 
-const (
-	g_ConfigFile = "config.json"
-)
-
 var (
 	g_WaitGroup   sync.WaitGroup
 	g_SyncCfg     SyncConfig
 	g_FileSyncer  *FileSyncer
 	g_FileWatcher *FileWatcher
+	g_ConfigFile  = "config.json"
 )
 
 func loadConfig() bool {
+	flag.StringVar(&g_ConfigFile, "config", "config.json", "sync config file")
+	flag.Parse()
 	_, err := os.Stat(g_ConfigFile)
 	if err != nil {
+		log.Printf("Not Exist ConfigFile:%v\n", err)
 		return false
 	}
 	configJson, err := ioutil.ReadFile(g_ConfigFile)
