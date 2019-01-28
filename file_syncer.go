@@ -28,7 +28,7 @@ func (s *FileSyncer) Connect() bool {
 	clientConfig := &ssh.ClientConfig{
 		User:    g_SyncCfg.SshUserName,
 		Auth:    auth,
-		Timeout: 15 * time.Second,
+		Timeout: 20 * time.Second,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		},
@@ -55,11 +55,13 @@ func (s *FileSyncer) Connect() bool {
 }
 
 func (s *FileSyncer) Disconnect() {
-	s.sftpClient.Close()
+	if s.sftpClient != nil {
+		s.sftpClient.Close()
+		s.sftpClient = nil
+	}
 }
 
 func (s *FileSyncer) Run() {
-	defer s.Disconnect()
 	defer g_WaitGroup.Done()
 	for {
 		select {
@@ -70,18 +72,26 @@ func (s *FileSyncer) Run() {
 					log.Printf("NoExist Sync Path:%s :%v\n", localSyncPath, err)
 					break
 				}
+				if !s.Connect() {
+					break
+				}
 				if file.IsDir() {
 					s.SyncDir(localSyncPath)
 				} else {
 					s.SyncFile(localSyncPath)
 				}
+				s.Disconnect()
 			}
 		case localRemovePath := <-s.removeEvent:
 			{
+				if !s.Connect() {
+					break
+				}
 				remoteRemovePath := s.JoinRemotePath(localRemovePath)
 				file, err := s.sftpClient.Stat(remoteRemovePath)
 				if err != nil {
 					log.Printf("NoExist Remove Path:%s :%v\n", localRemovePath, err)
+					s.Disconnect()
 					break
 				}
 				if file.IsDir() {
@@ -89,6 +99,7 @@ func (s *FileSyncer) Run() {
 				} else {
 					s.RemoveFile(remoteRemovePath)
 				}
+				s.Disconnect()
 			}
 		case <-s.doneEvent:
 			{
