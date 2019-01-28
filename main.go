@@ -70,11 +70,14 @@ func main() {
 	if !ok {
 		os.Exit(-1)
 	}
+
 	g_FileSyncer = newFileSyncer()
 	ok = g_FileSyncer.Connect()
 	if !ok {
 		os.Exit(-1)
 	}
+	g_FileSyncer.Disconnect()
+
 	g_FileWatcher = newFileWatcher()
 	ok = g_FileWatcher.Init()
 	if !ok {
