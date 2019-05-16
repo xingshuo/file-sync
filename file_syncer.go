@@ -138,6 +138,9 @@ func (s *FileSyncer) SyncFile(localFilePath string) error {
 		fmt.Printf("read localFile %s failed: %v\n", localFilePath, err)
 		return err
 	}
+	for old, new := range g_SyncCfg.ReplaceRule {
+		stream = []byte(strings.Replace(string(stream), old, new, -1))
+	}
 	dstFile.Write(stream)
 	log.Printf("sync file: %s -> %s ok\n", localFilePath, remoteFilePath)
 	return nil

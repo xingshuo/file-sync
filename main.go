@@ -22,6 +22,7 @@ type SyncConfig struct { //json.Unmarshal struct must public var
 
 	IgnoreFiles []string
 	IgnoreDirs  []string //relative path to LocalDir
+	ReplaceRule map[string]string
 }
 
 var (
