@@ -171,6 +171,10 @@ func (s *FileSyncer) SyncDir(localDirPath string) error {
 }
 
 func (s *FileSyncer) RemoveFile(remoteFilePath string) error {
+	if s.IsIgnoreFile(remoteFilePath) {
+		fmt.Printf("ignore remove file: %s\n", remoteFilePath)
+		return nil
+	}
 	err := s.sftpClient.Remove(remoteFilePath)
 	if err != nil {
 		log.Printf("remove remote file: %s err: %v\n", remoteFilePath, err)
@@ -181,6 +185,10 @@ func (s *FileSyncer) RemoveFile(remoteFilePath string) error {
 }
 
 func (s *FileSyncer) RemoveDir(remoteRemoveDir string) error {
+	if s.IsIgnoreDir(remoteRemoveDir) {
+		fmt.Printf("ignore remove dir: %s\n", remoteRemoveDir)
+		return nil
+	}
 	remoteFiles, err := s.sftpClient.ReadDir(remoteRemoveDir)
 	if err != nil {
 		log.Printf("remove remote dir: %s err: %v\n", remoteRemoveDir, err)
