@@ -1,11 +1,11 @@
 {
-	"localDir": "/home/lakefu/tmp/test_file_sync",
-	"remoteDir": "/home/xingshuo/test_file_sync",
+	"localDir": "E:/test/",
+	"remoteDir": "/root/test/",
 
-	"sshHost": "your remote address",
+	"sshHost": "192.168.1.178",
 	"sshPort": 22,
-	"sshUserName": "your username",
-	"sshPassword": "your password",
+	"sshUserName": "root",
+	"sshPassword": "wwlovecoding",
 
 	"ignoreFiles": [
 		".git",

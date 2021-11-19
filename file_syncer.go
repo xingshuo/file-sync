@@ -110,6 +110,7 @@ func (s *FileSyncer) Run() {
 }
 
 func (s *FileSyncer) JoinRemotePath(localPath string) string { //remote abs dir or file path
+	localPath = strings.Replace(localPath, "\\", "/", -1)
 	localPath = strings.Replace(localPath, g_SyncCfg.LocalDir, "", -1)
 	syncPath := filepath.ToSlash(localPath) //change platform dependent path delimiter to '/', example on windows '\' -> '/'
 	return path.Join(g_SyncCfg.RemoteDir, syncPath)
@@ -127,6 +128,7 @@ func (s *FileSyncer) SyncFile(localFilePath string) error {
 	}
 	defer srcFile.Close()
 	remoteFilePath := s.JoinRemotePath(localFilePath)
+	fmt.Println("localFilePath:%v", localFilePath)
 	dstFile, err := s.sftpClient.Create(remoteFilePath)
 	if err != nil {
 		fmt.Printf("create remote file %s failed: %v\n", remoteFilePath, err)
@@ -156,6 +158,14 @@ func (s *FileSyncer) SyncDir(localDirPath string) error {
 		fmt.Printf("sync dir %s failed: %v\n", localDirPath, err)
 		return err
 	}
+
+	if strings.HasSuffix(localDirPath, "新建文件夹") {
+		return nil
+	}
+	if strings.Contains(localDirPath, "新建文本文档.txt") {
+		return nil
+	}
+
 	remoteJoinDir := s.JoinRemotePath(localDirPath)
 	s.sftpClient.Mkdir(remoteJoinDir)
 	for _, file := range localFiles {
