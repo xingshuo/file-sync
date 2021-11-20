@@ -13,7 +13,8 @@
 		".swp",
 		".swx",
 		".sln",
-		".svn"
+		".svn",
+		"node_modules"
 	],
 	"ignoreDirs": [
 		"go-project/.idea"
