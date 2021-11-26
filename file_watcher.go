@@ -74,6 +74,15 @@ func (w *FileWatcher) Run() {
 					}
 					g_FileSyncer.removeEvent <- event.Name
 				}
+
+				if (event.Op & fsnotify.Rename) == fsnotify.Rename {
+					log.Printf("----Rename event (name:%s) (op:%v)\n", event.Name, event.Op)
+					file, err := os.Stat(event.Name)
+					if err == nil && file.IsDir() {
+						w.handler.Remove(event.Name)
+					}
+					g_FileSyncer.removeEvent <- event.Name
+				}
 			}
 		case err := <-w.handler.Errors:
 			{
