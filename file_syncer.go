@@ -15,11 +15,12 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+var (
+	g_FileSyncer = newFileSyncer()
+)
+
 type FileSyncer struct {
 	sftpClient  *sftp.Client
-	syncEvent   chan string
-	removeEvent chan string
-	doneEvent   chan struct{}
 }
 
 func (s *FileSyncer) Connect() bool {
@@ -62,62 +63,10 @@ func (s *FileSyncer) Disconnect() {
 }
 
 func (s *FileSyncer) Run() {
-	defer g_WaitGroup.Done()
-	for {
-		select {
-		case localSyncPath := <-s.syncEvent:
-			{
-				file, err := os.Stat(localSyncPath)
-				if err != nil { //when delete dir, the remove event notify two times, maybe you can ignore this err
-					log.Printf("NoExist Sync Path:%s :%v\n", localSyncPath, err)
-					break
-				}
-				if !s.Connect() {
-					break
-				}
-				if file.IsDir() {
-					s.SyncDir(localSyncPath)
-				} else {
-					s.SyncFile(localSyncPath)
-				}
-				s.Disconnect()
-			}
-		case localRemovePath := <-s.removeEvent:
-			{
-				if !s.Connect() {
-					break
-				}
-				remoteRemovePath := s.JoinRemotePath(localRemovePath)
-				file, err := s.sftpClient.Stat(remoteRemovePath)
-				if err != nil {
-					log.Printf("NoExist Remove Path:%s :%v\n", localRemovePath, err)
-					s.Disconnect()
-					break
-				}
-				if file.IsDir() {
-					s.RemoveDir(remoteRemovePath)
-				} else {
-					s.RemoveFile(remoteRemovePath)
-				}
-				s.Disconnect()
-			}
-		case <-s.doneEvent:
-			{
-				return
-			}
-		}
-	}
-}
-
-func (s *FileSyncer) JoinRemotePath(localPath string) string { //remote abs dir or file path
-	localPath = strings.Replace(localPath, "\\", "/", -1)
-	localPath = strings.Replace(localPath, g_SyncCfg.LocalDir, "", -1)
-	syncPath := filepath.ToSlash(localPath) //change platform dependent path delimiter to '/', example on windows '\' -> '/'
-	return path.Join(g_SyncCfg.RemoteDir, syncPath)
 }
 
 func (s *FileSyncer) SyncFile(localFilePath string) error {
-	if s.IsIgnoreFile(localFilePath) {
+	if IsIgnoreFile(localFilePath) {
 		fmt.Printf("ignore sync file: %s\n", localFilePath)
 		return nil
 	}
@@ -127,7 +76,7 @@ func (s *FileSyncer) SyncFile(localFilePath string) error {
 		return err
 	}
 	defer srcFile.Close()
-	remoteFilePath := s.JoinRemotePath(localFilePath)
+	remoteFilePath := JoinRemotePath(localFilePath)
 	fmt.Println("localFilePath:%v", localFilePath)
 	dstFile, err := s.sftpClient.Create(remoteFilePath)
 	if err != nil {
@@ -149,7 +98,7 @@ func (s *FileSyncer) SyncFile(localFilePath string) error {
 }
 
 func (s *FileSyncer) SyncDir(localDirPath string) error {
-	if s.IsIgnoreDir(localDirPath) {
+	if IsIgnoreDir(localDirPath) {
 		fmt.Printf("ignore sync dir: %s\n", localDirPath)
 		return nil
 	}
@@ -166,7 +115,7 @@ func (s *FileSyncer) SyncDir(localDirPath string) error {
 		return nil
 	}
 
-	remoteJoinDir := s.JoinRemotePath(localDirPath)
+	remoteJoinDir := JoinRemotePath(localDirPath)
 	s.sftpClient.Mkdir(remoteJoinDir)
 	for _, file := range localFiles {
 		subSyncPath := filepath.Join(localDirPath, file.Name())
@@ -181,7 +130,7 @@ func (s *FileSyncer) SyncDir(localDirPath string) error {
 }
 
 func (s *FileSyncer) RemoveFile(remoteFilePath string) error {
-	if s.IsIgnoreFile(remoteFilePath) {
+	if IsIgnoreFile(remoteFilePath) {
 		fmt.Printf("ignore remove file: %s\n", remoteFilePath)
 		return nil
 	}
@@ -195,7 +144,7 @@ func (s *FileSyncer) RemoveFile(remoteFilePath string) error {
 }
 
 func (s *FileSyncer) RemoveDir(remoteRemoveDir string) error {
-	if s.IsIgnoreDir(remoteRemoveDir) {
+	if IsIgnoreDir(remoteRemoveDir) {
 		fmt.Printf("ignore remove dir: %s\n", remoteRemoveDir)
 		return nil
 	}
@@ -217,37 +166,8 @@ func (s *FileSyncer) RemoveDir(remoteRemoveDir string) error {
 	return nil
 }
 
-func (s *FileSyncer) IsIgnoreFile(fpath string) bool {
-	dirname, filename := filepath.Split(fpath)
-	for _, suffix := range g_SyncCfg.IgnoreFiles {
-		if strings.HasSuffix(filename, suffix) {
-			return true
-		}
-	}
-	for _, prefix := range g_SyncCfg.IgnoreDirs {
-		absPrefix := filepath.Join(g_SyncCfg.LocalDir, prefix)
-		if strings.HasPrefix(dirname, absPrefix) {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *FileSyncer) IsIgnoreDir(dirname string) bool {
-	for _, prefix := range g_SyncCfg.IgnoreDirs {
-		absPrefix := filepath.Join(g_SyncCfg.LocalDir, prefix)
-		if strings.HasPrefix(dirname, absPrefix) {
-			return true
-		}
-	}
-	return false
-}
-
 func newFileSyncer() *FileSyncer {
 	return &FileSyncer{
 		sftpClient:  nil,
-		syncEvent:   make(chan string),
-		removeEvent: make(chan string),
-		doneEvent:   make(chan struct{}),
 	}
 }

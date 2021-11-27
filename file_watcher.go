@@ -18,14 +18,14 @@ func (w *FileWatcher) Init() bool {
 		log.Printf("os.Stat LocalDir %s error:v\n", g_SyncCfg.LocalDir, err)
 		return false
 	}
-	log.Printf("Start Watch: %s\n", g_SyncCfg.LocalDir)
+	log.Printf("Run Watch: %s\n", g_SyncCfg.LocalDir)
 	filepath.Walk(g_SyncCfg.LocalDir, func(path string, info os.FileInfo, err error) error {
 		if info != nil && info.IsDir() {
 			path, err := filepath.Abs(path)
 			if err != nil {
 				log.Fatalf("Walk filepath:%s err1:%v\n", path, err)
 			}
-			if g_FileSyncer.IsIgnoreDir(path) {
+			if IsIgnoreDir(path) {
 				// log.Printf("Ignore path: %s\n", path)
 				return nil
 			}
@@ -58,12 +58,12 @@ func (w *FileWatcher) Run() {
 					if file.IsDir() {
 						w.handler.Add(event.Name)
 					}
-					g_FileSyncer.syncEvent <- event.Name
+					g_ChangeQueue.changedEvents.Store(event.Name,  NewFileSyncInfo(SyncType_Sync))
 				}
 
 				if (event.Op & fsnotify.Write) == fsnotify.Write {
 					log.Printf("----write event (name:%s) (op:%v)\n", event.Name, event.Op)
-					g_FileSyncer.syncEvent <- event.Name
+					g_ChangeQueue.changedEvents.Store(event.Name, NewFileSyncInfo(SyncType_Sync))
 				}
 
 				if (event.Op & fsnotify.Remove) == fsnotify.Remove {
@@ -72,7 +72,7 @@ func (w *FileWatcher) Run() {
 					if err == nil && file.IsDir() {
 						w.handler.Remove(event.Name)
 					}
-					g_FileSyncer.removeEvent <- event.Name
+					g_ChangeQueue.changedEvents.Store(event.Name, NewFileSyncInfo(SyncType_Del))
 				}
 
 				if (event.Op & fsnotify.Rename) == fsnotify.Rename {
@@ -81,7 +81,7 @@ func (w *FileWatcher) Run() {
 					if err == nil && file.IsDir() {
 						w.handler.Remove(event.Name)
 					}
-					g_FileSyncer.removeEvent <- event.Name
+					g_ChangeQueue.changedEvents.Store(event.Name, NewFileSyncInfo(SyncType_Del))
 				}
 			}
 		case err := <-w.handler.Errors:
