@@ -16,9 +16,8 @@ Wiki
 
 安装
 -----
-    1. go get -v -u -x github.com/xingshuo/file-sync
-    2. git clone https://github.com/xingshuo/file-sync.git
-    3. cd file-sync && go build
+    1. git clone https://github.com/xingshuo/file-sync.git
+    2. cd file-sync && go build
 
 运行
 -----
